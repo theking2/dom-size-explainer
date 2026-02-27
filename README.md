@@ -5,7 +5,8 @@
 
 A Chrome extension that explains **why** a DOM element has the dimensions it does — not just what they are.
 
-![DOM Size Explainer panel screenshot](screenshot.png)
+<img width="600" height="1502" alt="image" src="https://github.com/user-attachments/assets/471e188c-bac2-4467-a106-31c6961de2c3" />
+
 
 ## What it does
 
