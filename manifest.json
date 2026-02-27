@@ -1,0 +1,19 @@
+{
+  "manifest_version": 3,
+  "name": "DOM Size Explainer",
+  "version": "1.1",
+  "description": "Click any element to understand why it has its size",
+  "permissions": ["activeTab", "scripting", "storage"],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "DOM Size Explainer"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "icons": {
+    "16": "icon.png",
+    "48": "icon.png",
+    "128": "icon.png"
+  }
+}
