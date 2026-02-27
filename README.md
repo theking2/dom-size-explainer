@@ -1,3 +1,6 @@
+# dom-size-explainer
+
+[![Made with Claude Code](https://img.shields.io/badge/Made%20with-Claude%20Code-blueviolet)](https://claude.ai/code)
 # ⬡ DOM Size Explainer
 
 A Chrome extension that explains **why** a DOM element has the dimensions it does — not just what they are.
