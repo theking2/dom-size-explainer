@@ -55,6 +55,7 @@ The extension checks, in order:
 | `box-sizing` | Whether padding/border are inside or outside the stated width |
 | `min-width` / `max-width` | Hard constraints |
 | `float` | Floated elements shrink-wrap content |
+| For text | explains height using line-height and line count |
 | Fallback | Reports computed value if no single rule dominates |
 
 ## Files
