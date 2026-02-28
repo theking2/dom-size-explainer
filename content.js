@@ -265,6 +265,7 @@
     const pH = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight);
     const bH = parseFloat(cs.borderLeftWidth) + parseFloat(cs.borderRightWidth);
     const pV = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
+    const bV = parseFloat(cs.borderTopWidth) + parseFloat(cs.borderBottomWidth);
 
     // WIDTH
     // 1. Check for an explicit CSS width (computed, not just inline)
@@ -413,13 +414,16 @@
       const lineHeightPx = lineHeight === 'normal'
         ? parseFloat(cs.fontSize) * 1.2  // browsers use ~1.2 for 'normal'
         : parseFloat(lineHeight);
-      const contentHeight = rect.height - pV;
+      const contentHeight = rect.height - pV - bV;
       const approxLines = lineHeightPx > 0 ? Math.round(contentHeight / lineHeightPx) : '?';
       const lhDesc = lineHeight === 'normal'
         ? `line-height: normal (≈ font-size ${cs.fontSize} × 1.2 = ~${Math.round(lineHeightPx)}px)`
         : `line-height: ${lineHeight}`;
+      const parts = [`~${approxLines} line${approxLines !== 1 ? 's' : ''} (${Math.round(lineHeightPx)}px × ${approxLines} = ${Math.round(contentHeight)}px)`];
+      if (pV > 0) parts.push(`padding ${Math.round(pV)}px`);
+      if (bV > 0) parts.push(`border ${Math.round(bV)}px`);
       add('h','default','Height from line-height × lines',
-        `No explicit height. ${lhDesc}, ~${approxLines} line${approxLines !== 1 ? 's' : ''} + padding ${Math.round(pV)}px = ${Math.round(rect.height)}px total.${lineHeight === 'normal' ? ' "normal" is font/UA dependent — exact px varies.' : ''}`);
+        `No explicit height. ${lhDesc}. ${parts.join(' + ')} = ${Math.round(rect.height)}px total.${lineHeight === 'normal' ? ' "normal" is font/UA dependent — exact px varies.' : ''}`);
     } else {
       add('h','default','Auto height (content-driven)',`No explicit height — grows to wrap its children. Total ${Math.round(rect.height)}px (padding contributes ${Math.round(pV)}px).`);
     }
