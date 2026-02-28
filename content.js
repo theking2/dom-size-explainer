@@ -371,10 +371,29 @@
     }
 
     // HEIGHT
-    if (cs.height==='auto'||!cs.height)
-      add('h','default','Auto height (content-driven)',`No explicit height — grows to wrap content. Total ${Math.round(rect.height)}px (padding contributes ${Math.round(pV)}px).`);
+    const isAutoHeight = cs.height === 'auto' || !cs.height;
+    if (isAutoHeight)
+      add('h','default','Implicit height (no height: property set)',`No height: property is set — the browser calculates height implicitly from content, font-size, line-height, padding, margin, and border. Total ${Math.round(rect.height)}px (padding contributes ${Math.round(pV)}px).`);
     else
-      add('h','ok',`Explicit height:${cs.height}`,`height is explicitly set to ${cs.height}${cs.height.endsWith('%')?` of parent height (${pc?pc.height:'?'})`:''}.`);
+      add('h','ok',`Explicit height: ${cs.height}`,`height: ${cs.height} is explicitly set via the height property${cs.height.endsWith('%')?` (${cs.height} of parent height ${pc?pc.height:'?'})`:''} — the browser does not calculate it from content.`);
+
+    // For text elements with implicit (auto) height, explain font-size × line-height contribution
+    const NORMAL_LH_MULTIPLIER = 1.2; // browser typical; 'normal' is not exactly this — varies by font
+    const textTags = ['p','h1','h2','h3','h4','h5','h6','li','dt','dd','blockquote','div','span','a','label','cite','figcaption','code','pre','em','strong','b','i','small','td','th'];
+    const isTextEl = textTags.includes(tag) || (el.childElementCount === 0 && el.textContent.trim().length > 0);
+    if (isAutoHeight && isTextEl) {
+      const fs = parseFloat(cs.fontSize);
+      const lhRaw = cs.lineHeight;
+      const lhIsNormal = lhRaw === 'normal';
+      const lhPx = lhIsNormal ? fs * NORMAL_LH_MULTIPLIER : parseFloat(lhRaw);
+      const contentH = rect.height - pV;
+      const approxLines = lhPx > 0 ? Math.round(contentH / lhPx) : 1;
+      const lhNote = lhIsNormal
+        ? `normal (~${lhPx.toFixed(1)}px ≈ ${NORMAL_LH_MULTIPLIER}× font-size; not exact — browser/font-dependent, may be non-integer pixels)`
+        : lhRaw;
+      add('h','info','Implicit height from font-size × line-height',
+        `No height: property — height is implicitly set by text layout.\nfont-size: ${Math.round(fs)}px  line-height: ${lhNote}.\n~${approxLines} line${approxLines !== 1 ? 's' : ''} × ${lhPx.toFixed(1)}px ≈ ${(approxLines * lhPx).toFixed(1)}px content${pV > 0 ? ` + ${Math.round(pV)}px padding` : ''} = ${Math.round(rect.height)}px total.`);
+    }
 
     if (cs.minHeight&&cs.minHeight!=='0px') add('h','warn',`min-height:${cs.minHeight}`,`Can't shrink below ${cs.minHeight}.`);
     if (cs.maxHeight&&cs.maxHeight!=='none') add('h','warn',`max-height:${cs.maxHeight}`,`Height is capped at ${cs.maxHeight}.`);
