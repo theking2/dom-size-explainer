@@ -371,13 +371,61 @@
     }
 
     // HEIGHT
-    if (cs.height==='auto'||!cs.height)
-      add('h','default','Auto height (content-driven)',`No explicit height — grows to wrap content. Total ${Math.round(rect.height)}px (padding contributes ${Math.round(pV)}px).`);
-    else
-      add('h','ok',`Explicit height:${cs.height}`,`height is explicitly set to ${cs.height}${cs.height.endsWith('%')?` of parent height (${pc?pc.height:'?'})`:''}.`);
+    // Detect whether height was explicitly authored or is implicit
+    const hasInlineHeight = el.style.height && el.style.height !== 'auto';
+    const heightKeyword = (() => {
+      try {
+        for (const sheet of document.styleSheets) {
+          let rules; try { rules = sheet.cssRules; } catch { continue; }
+          for (const rule of rules) {
+            if (rule.style && rule.selectorText && el.matches(rule.selectorText)) {
+              const h = rule.style.height;
+              if (h && h !== '') return h;
+            }
+          }
+        }
+      } catch {}
+      return null;
+    })();
+    const explicitHeight = hasInlineHeight ? el.style.height : heightKeyword;
 
-    if (cs.minHeight&&cs.minHeight!=='0px') add('h','warn',`min-height:${cs.minHeight}`,`Can't shrink below ${cs.minHeight}.`);
-    if (cs.maxHeight&&cs.maxHeight!=='none') add('h','warn',`max-height:${cs.maxHeight}`,`Height is capped at ${cs.maxHeight}.`);
+    // Detect if height is driven by line-height × lines (text content elements)
+    // The browser always resolves cs.height to px, so we check if an explicit rule exists.
+    // If not, and the element contains text, it's line-height driven.
+    const isTextDriven = (() => {
+      if (explicitHeight && explicitHeight !== 'auto') return false;
+      // Check if element has direct text content (not just children)
+      const hasText = [...el.childNodes].some(n => n.nodeType === Node.TEXT_NODE && n.textContent.trim());
+      // Also treat inline/block elements whose only content is text children
+      const onlyTextChildren = el.children.length === 0 && el.textContent.trim().length > 0;
+      return hasText || onlyTextChildren || ['p','h1','h2','h3','h4','h5','h6','span','a','li','td','th','label','button'].includes(tag);
+    })();
+
+    if (explicitHeight && explicitHeight !== 'auto') {
+      if (explicitHeight.endsWith('%') && pc) {
+        add('h','ok',`Explicit height: ${explicitHeight}`,`${explicitHeight} of parent height (${pc.height}).`);
+      } else {
+        add('h','ok',`Explicit height: ${explicitHeight}`,`height is explicitly set to ${explicitHeight}${hasInlineHeight ? ' via inline style' : ' via CSS rule'}.`);
+      }
+    } else if (isTextDriven) {
+      // Calculate approximate line count
+      const lineHeight = cs.lineHeight;
+      const lineHeightPx = lineHeight === 'normal'
+        ? parseFloat(cs.fontSize) * 1.2  // browsers use ~1.2 for 'normal'
+        : parseFloat(lineHeight);
+      const contentHeight = rect.height - pV;
+      const approxLines = lineHeightPx > 0 ? Math.round(contentHeight / lineHeightPx) : '?';
+      const lhDesc = lineHeight === 'normal'
+        ? `line-height: normal (≈ font-size ${cs.fontSize} × 1.2 = ~${Math.round(lineHeightPx)}px)`
+        : `line-height: ${lineHeight}`;
+      add('h','default','Height from line-height × lines',
+        `No explicit height. ${lhDesc}, ~${approxLines} line${approxLines !== 1 ? 's' : ''} + padding ${Math.round(pV)}px = ${Math.round(rect.height)}px total.${lineHeight === 'normal' ? ' "normal" is font/UA dependent — exact px varies.' : ''}`);
+    } else {
+      add('h','default','Auto height (content-driven)',`No explicit height — grows to wrap its children. Total ${Math.round(rect.height)}px (padding contributes ${Math.round(pV)}px).`);
+    }
+
+    if (cs.minHeight&&cs.minHeight!=='0px') add('h','warn',`min-height: ${cs.minHeight}`,`Can't shrink below ${cs.minHeight}.`);
+    if (cs.maxHeight&&cs.maxHeight!=='none') add('h','warn',`max-height: ${cs.maxHeight}`,`Height is capped at ${cs.maxHeight}.`);
 
     // MISC
     if (cs.aspectRatio&&cs.aspectRatio!=='auto')
