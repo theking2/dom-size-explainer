@@ -1,0 +1,64 @@
+name: Update README with Latest Release Assets
+
+on:
+  release:
+    types: [published, edited]
+
+permissions:
+  contents: write
+
+jobs:
+  update-readme:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Get latest release
+        id: get_release
+        uses: cardinalby/git-get-release-action@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          latest: true
+
+      - name: Generate assets table
+        id: generate_table
+        run: |
+          echo "### 📦 Latest Release: ${{ steps.get_release.outputs.name }}" > release_table.md
+          echo "" >> release_table.md
+          echo "| Asset | Download |" >> release_table.md
+          echo "|-------|----------|" >> release_table.md
+          
+          echo '${{ steps.get_release.outputs.assets }}' | jq -r '.[] | "|\(.name)|[Download](\(.browser_download_url))|"' >> release_table.md
+          
+          echo "" >> release_table.md
+          echo "🔗 [View full release on GitHub](${{ steps.get_release.outputs.html_url }})" >> release_table.md
+
+      - name: Update README
+        run: |
+          # Read current README
+          cat README.md > current_readme.md
+          
+          # Check if there's a release section marker
+          if grep -q "<!-- LATEST_RELEASE -->" README.md; then
+            # Replace existing section
+            sed -i '/<!-- LATEST_RELEASE -->/,/<!-- END_LATEST_RELEASE -->/d' README.md
+            echo "<!-- LATEST_RELEASE -->" >> README.md
+            cat release_table.md >> README.md
+            echo "<!-- END_LATEST_RELEASE -->" >> README.md
+            cat current_readme.md >> README.md.tmp
+          else
+            # Append at the end
+            echo "" >> README.md
+            echo "## Latest Release" >> README.md
+            cat release_table.md >> README.md
+          fi
+
+      - name: Commit changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add README.md
+          git diff --quiet && git diff --staged --quiet || git commit -m "Update README with latest release assets"
+          git push
